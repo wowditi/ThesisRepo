@@ -1,0 +1,13 @@
+Cora:
+	Command:	time bin-Linux/verifyta -E -f ../Models/Comp1/ts/trace.xtr ../Models/Comp1/ts/CoraFinal.xml ../Models/Comp1/CoraFinal.q
+	Time:		0.093s
+	Score:		1859146
+Stratego:
+	Command:	time bin-Linux/verifyta --good-runs 20 --total-runs 20 --eval-runs 1 --runs-pr-state 1 --learning-method 2 --filter 2 -R 193 -r 101 ../Models/Comp1/ts/Final.xml
+	Time:		11.334s
+	Score:		1.89504e+06
+	Note:		Seed 100 gave the score 2.02723e+06
+SMC:
+	Command:	time bin-Linux/verifyta -R 193 -r 100 ../Models/Comp1/ts/SMCFinal.xml
+	Time:		12.329s
+	Score:		2.00912e+06

@@ -1,0 +1,12 @@
+Cora:
+	Command:	time bin-Linux/verifyta -E -f ../Models/Comp1/bat/trace.xtr ../Models/Comp1/bat/CoraFinal.xml ../Models/Comp1/CoraFinal.q
+	Time:		Out of memory/Can crash your pc on linux
+	Score:		inf
+Stratego:
+	Command:	time bin-Linux/verifyta --good-runs 50 --total-runs 50 --eval-runs 1 --runs-pr-state 1 --learning-method 2 --filter 2 -R 193 -r 100 ../Models/Comp1/bat/Final.xml
+	Time:		31,109s
+	Score:		895128
+SMC:
+	Command:	time bin-Linux/verifyta -R 193 -r 100 ../Models/Comp1/bat/SMCFinal.xml
+	Time:		33,749s
+	Score:		1.14409e+06

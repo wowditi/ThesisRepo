@@ -1,0 +1,161 @@
+typedef int[-8388608, 8388607] Int24_t;
+typedef int[0, 8388607] UInt24_t;
+typedef int[-2147483648, 2147483647] Int32_t;
+typedef int[0, 2147483647] UInt32_t;
+typedef int[-128, 127] Int8_t;
+typedef int[0, 127] UInt8_t;
+typedef int[0, 65535] UInt_t;
+UInt32_t square(Int24_t a) {return a*a;}
+Int32_t abs(Int32_t a) {return a < 0 ? -a : a;}
+clock time;
+hybrid clock cost;
+UInt_t intTime;
+Int24_t HouseDynamicCosts;
+Int24_t HouseBatteryCosts;
+broadcast chan step;
+broadcast chan batteryStep;
+broadcast chan evStep;
+broadcast chan tsStep;
+Int8_t chargingState;
+const UInt_t reductionFactor = 300;
+const UInt_t num_entries = 480;
+const UInt_t end_time = num_entries;
+const int maxNumTimeShiftables = 2;
+const int longestIntervalList = 3;
+const int longestConsumption = 6;
+const int numHouses = 5;
+
+typedef int[0, maxNumTimeShiftables-1] timeShiftable_t;
+typedef int[0, numHouses-1] house_t;
+typedef int[0, longestIntervalList-1] interval_t;
+typedef int[0, num_entries-1] entries_t;
+const int longestInterval = 300;
+broadcast chan batteryStartSwitch;
+broadcast chan batteryStopSwitch;
+			   
+Int32_t batteryFillLimit[house_t] = {-2147480000,-2147480000,-2147480000,-2147480000,-2147480000};
+Int24_t batteryFillValue[house_t];
+UInt32_t SoC[house_t] = {150000,0,0,0,0};
+
+Int24_t latestCost;
+
+broadcast chan tsStartChan[house_t][timeShiftable_t];
+						   
+Int32_t fillLimits[house_t] = {-2147480000,-2147480000,-2147480000,-2147480000,-2147480000};
+
+UInt32_t fillValues[house_t];
+UInt32_t charges[house_t];
+int[0, longestIntervalList] evIntervals[house_t];
+
+house_t order[house_t];
+						   
+int[-1, end_time] tsStartTimes[house_t][timeShiftable_t] = {{-1,-1},{-1,-1},{-1,-1},{-1,-1},{-1,-1}};
+
+typedef struct {
+	int start;
+	int end;
+} Interval_t;
+
+typedef struct {
+	int length;
+	Interval_t intervalList[longestIntervalList];
+} IntervalList_t;
+
+typedef struct {
+	int length;
+	int data[longestConsumption];
+} ConsumptionProfile_t;
+
+typedef struct {
+	ConsumptionProfile_t consumption;
+	IntervalList_t data;
+} TimeShiftable_t;
+
+typedef struct {
+	UInt32_t maximumChargeRate;
+	UInt32_t capacity;
+	UInt32_t initialSoc;
+} Battery_t;
+
+typedef struct {
+	UInt32_t maximumChargeRate;
+	UInt32_t capacity;
+	UInt32_t requiredCharge[longestIntervalList];
+	Int32_t maxTsCosts[longestIntervalList];
+	IntervalList_t intervals;
+} ElectricalVehicle_t;
+
+typedef struct {
+	int timeShiftableLength;
+	TimeShiftable_t timeShiftables[maxNumTimeShiftables];
+	Battery_t battery;
+	ElectricalVehicle_t ev;
+} House_t;
+
+const int HouseBases[num_entries] = {16427,12480,11607,11759,11807,8895,12147,12361,9648,9796,13707,10506,9420,11044,14121,8610,9954,13534,10953,9069,11154,13154,8864,9542,10651,6794,6611,12931,14951,4838,3782,8975,-8250,-10762,-8041,-8015,-24682,-23981,-19677,-22989,-1506,2270,1877,18,-8339,-5889,-7365,-8777,-14897,-16915,-16596,-16163,-15421,-17245,-15483,-14870,-2489,-3637,4026,25,-3981,-2545,903,-1229,3281,7110,7601,14906,15438,31335,34419,28565,31018,25013,24490,32749,26924,27398,17072,16266,28335,32823,40122,35666,29885,42581,48087,45474,48716,49184,38059,17500,15565,13108,11592,11791,10224,10029,12645,11983,8601,11203,13676,9571,9186,12837,12778,8250,10363,14492,9946,8691,12857,12369,9134,9524,14862,9081,9287,11992,9703,5289,7680,10263,-191,-1746,2882,1040,-20911,-18168,-9588,-16837,-20327,-13198,-12267,-15699,-16201,-15559,-18652,-19250,-26318,-28235,-28553,-26801,-33851,-36376,-36178,-27330,-15459,-15505,-4948,-12136,-22966,-19405,-21411,-22555,-7336,-11430,-12365,-13948,-6119,-7028,-5475,-6111,-3291,-4007,-3097,-711,6211,7125,48417,58545,46301,17510,32486,17403,48633,46031,22118,29464,23282,25362,31601,33911,49902,49431,50043,46959,28346,16259,13632,11079,8439,11485,14275,8852,9024,13910,11867,8376,10424,14691,9560,8817,13354,11674,9269,10574,13538,9742,9638,13434,10436,9093,11536,12715,6236,6751,11265,7677,-5058,-1699,-730,-4422,-20132,-13945,-15843,-13407,-8500,-7524,-8638,-9202,130,-3610,-4617,-2533,-20097,-21952,-20343,-20735,-28400,-19438,10980,-23112,1781,-4712,-5136,-6660,-8054,-8898,-6190,-4273,9251,1478,1814,925,-349,-359,-431,3028,-4701,7955,59133,41435,38400,26705,43918,34889,16557,14957,13958,14926,24007,16219,30138,26466,17814,22970,33636,41765,42636,44810,45113,39471,30028,21386,14395,8538,9668,13390,11599,8646,11501,12836,10212,9166,14197,9618,10259,11651,12475,8810,10632,14458,9291,8940,13333,12318,8100,9820,14408,9493,6228,10934,10816,7130,-5492,4738,437,-3048,-15233,-15779,-17018,-16025,-17585,-17340,-20052,-18758,-34416,-34539,-33381,-34563,-38387,-37934,-37180,-38337,-37858,-35559,-32965,-33813,-40943,-41749,-40981,-42621,-34671,-36766,-32461,-34840,-23186,-26415,-26418,-25789,-16028,-15928,-12007,-15050,-1110,31637,59940,48848,27406,20406,12819,10407,18830,16068,17892,18654,57374,60042,31006,30053,20844,32703,47744,48719,49791,51731,44895,29613,14453,13465,10016,9780,12502,11635,9278,10750,14079,8944,9737,13518,11342,8454,11279,14508,8810,8706,14338,11687,8320,10460,14885,9456,8155,12679,12603,8174,7693,9776,9188,8812,-2320,-874,-2501,-651,-18771,-19172,-19298,-17890,-27890,-30907,-27661,-30187,-38074,-37286,-36273,-37745,-41937,-40458,-40557,-42087,-40070,-40454,-39679,-40592,-33129,-32265,-32678,-10629,-18609,-23230,-22263,-23286,-6205,-4586,-1118,-5208,33828,29687,29304,13466,20436,68104,89780,64613,40936,42586,34315,18875,18095,18146,19180,19334,20394,27490,24195,26108,23584,26329,31005,33663,48878,50954,42021,28114,24838,10652,9134,11522};
+const int HouseAvg = 10790;
+const Interval_t emptyInterval_t = {0,0};
+const ConsumptionProfile_t emptyConsumptionProfile_t = {0, {0, 0, 0, 0, 0, 0}};
+const IntervalList_t emptyIntervalList_t = {0, {emptyInterval_t, emptyInterval_t, emptyInterval_t}};
+const TimeShiftable_t emptyTimeShiftable_t = {emptyConsumptionProfile_t, emptyIntervalList_t};
+const Battery_t emptyBattery_t = {0, 0, 0};
+const Interval_t h0d0listi0 = {243, 280};
+const IntervalList_t h0d0list = {1, {h0d0listi0, emptyInterval_t, emptyInterval_t}};
+const ConsumptionProfile_t h0d0cp = {5, {13595, 13705, 2249, 2506, 2454, 0}};
+const TimeShiftable_t h0d0 = {h0d0cp, h0d0list};
+const IntervalList_t h0evlist = {0, {emptyInterval_t, emptyInterval_t, emptyInterval_t}};
+const ElectricalVehicle_t h0ev = {0, 0, {0,0,0}, {0,0,0}, h0evlist};
+const Battery_t h0battery = {55500, 300000, 150000};
+const House_t h0 = {1, {h0d0, emptyTimeShiftable_t}, h0battery, h0ev};
+const Interval_t h1d0listi0 = {137, 160};
+const Interval_t h1d0listi1 = {252, 277};
+const IntervalList_t h1d0list = {2, {h1d0listi0, h1d0listi1, emptyInterval_t}};
+const ConsumptionProfile_t h1d0cp = {5, {13595, 13705, 2249, 2506, 2454, 0}};
+const TimeShiftable_t h1d0 = {h1d0cp, h1d0list};
+const Interval_t h1d1listi0 = {85, 124};
+const Interval_t h1d1listi1 = {180, 222};
+const IntervalList_t h1d1list = {2, {h1d1listi0, h1d1listi1, emptyInterval_t}};
+const ConsumptionProfile_t h1d1cp = {6, {525, 30225, 11747, 9626, 26115, 2606}};
+const TimeShiftable_t h1d1 = {h1d1cp, h1d1list};
+const Interval_t h1evlisti0 = {69, 152};
+const Interval_t h1evlisti1 = {172, 225};
+const IntervalList_t h1evlist = {2, {h1evlisti0, h1evlisti1, emptyInterval_t}};
+const ElectricalVehicle_t h1ev = {55500, 12000, {5005,12000,3336}, {5001,2176,0}, h1evlist};
+const House_t h1 = {2, {h1d0, h1d1}, emptyBattery_t, h1ev};
+const Interval_t h2d0listi0 = {75, 96};
+const IntervalList_t h2d0list = {1, {h2d0listi0, emptyInterval_t, emptyInterval_t}};
+const ConsumptionProfile_t h2d0cp = {5, {13595, 13705, 2249, 2506, 2454, 0}};
+const TimeShiftable_t h2d0 = {h2d0cp, h2d0list};
+const Interval_t h2evlisti0 = {73, 130};
+const IntervalList_t h2evlist = {1, {h2evlisti0, emptyInterval_t, emptyInterval_t}};
+const ElectricalVehicle_t h2ev = {111000, 42000, {6673,6672,0}, {4653,0,0}, h2evlist};
+const House_t h2 = {1, {h2d0, emptyTimeShiftable_t}, emptyBattery_t, h2ev};
+const Interval_t h3d0listi0 = {81, 95};
+const Interval_t h3d0listi1 = {145, 183};
+const Interval_t h3d0listi2 = {264, 286};
+const IntervalList_t h3d0list = {3, {h3d0listi0, h3d0listi1, h3d0listi2}};
+const ConsumptionProfile_t h3d0cp = {5, {13595, 13705, 2249, 2506, 2454, 0}};
+const TimeShiftable_t h3d0 = {h3d0cp, h3d0list};
+const Interval_t h3evlisti0 = {72, 131};
+const IntervalList_t h3evlist = {1, {h3evlisti0, emptyInterval_t, emptyInterval_t}};
+const ElectricalVehicle_t h3ev = {55500, 12000, {3337,8340,0}, {4495,0,0}, h3evlist};
+const House_t h3 = {1, {h3d0, emptyTimeShiftable_t}, emptyBattery_t, h3ev};
+const Interval_t h4d0listi0 = {75, 95};
+const Interval_t h4d0listi1 = {239, 257};
+const IntervalList_t h4d0list = {2, {h4d0listi0, h4d0listi1, emptyInterval_t}};
+const ConsumptionProfile_t h4d0cp = {5, {13595, 13705, 2249, 2506, 2454, 0}};
+const TimeShiftable_t h4d0 = {h4d0cp, h4d0list};
+const Interval_t h4d1listi0 = {81, 92};
+const Interval_t h4d1listi1 = {136, 169};
+const Interval_t h4d1listi2 = {232, 267};
+const IntervalList_t h4d1list = {3, {h4d1listi0, h4d1listi1, h4d1listi2}};
+const ConsumptionProfile_t h4d1cp = {6, {525, 30225, 11747, 9626, 26115, 2606}};
+const TimeShiftable_t h4d1 = {h4d1cp, h4d1list};
+const Interval_t h4evlisti0 = {71, 129};
+const IntervalList_t h4evlist = {1, {h4evlisti0, emptyInterval_t, emptyInterval_t}};
+const ElectricalVehicle_t h4ev = {111000, 42000, {8342,0,0}, {4572,0,0}, h4evlist};
+const House_t h4 = {2, {h4d0, h4d1}, emptyBattery_t, h4ev};
+const House_t houses[house_t] = {h0, h1, h2, h3, h4};
+Int24_t getHouseCost(int offset) {
+    return HouseBases[intTime+offset]+HouseDynamicCosts+HouseBatteryCosts;
+}

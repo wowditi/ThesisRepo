@@ -1,0 +1,36 @@
+NumTS:    7
+NumEV:    0
+NumBat:   0
+Length:   3 days
+DEMKit:
+  Duration:   10.053584337234497
+  Score:      2048285.3260362672
+Uppaal:
+  Duration:   99.45987319946289
+  Score:      2015464.8525322387
+  Seed:       1548419819
+  Learning:   Logistic Regression
+  Resolution: 385
+  TimeShiftables:
+      Amount:         1
+      Optimized:      True
+      Good-runs:      5
+      Total-runs:     5
+      Runs-pr-state:  1
+      Eval-runs:      1
+  EVs:
+      Amount:         1
+      Optimized:      True
+      Good-runs:      0
+      Total-runs:     0
+      Runs-pr-state:  0
+      Eval-runs:      0
+  Batteries:
+      Amount:         1
+      Optimized:      True
+      Good-runs:      0
+      Total-runs:     0
+      Runs-pr-state:  0
+      Eval-runs:      0
+
+The Stratego schedule puts 98.4% as much strain on the grid as the demkit schedule.

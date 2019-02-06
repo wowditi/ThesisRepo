@@ -1,0 +1,328 @@
+<?xml version="1.0" encoding="utf-8"?><!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.1//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_1.dtd'><nta><declaration>typedef int[-8388608, 8388607] Int24_t;
+typedef int[0, 8388607] UInt24_t;
+typedef int[-2147483648, 2147483647] Int32_t;
+typedef int[0, 2147483647] UInt32_t;
+typedef int[-128, 127] Int8_t;
+typedef int[0, 127] UInt8_t;
+typedef int[0, 65535] UInt_t;
+UInt32_t square(Int24_t a) {return a*a;}
+Int32_t abs(Int32_t a) {return a &lt; 0 ? -a : a;}
+clock time;
+UInt_t intTime;
+Int24_t HouseDynamicCosts;
+Int24_t HouseBatteryCosts;
+broadcast chan step;
+broadcast chan batteryStep;
+broadcast chan evStep;
+broadcast chan tsStep;
+Int8_t chargingState;
+const UInt_t reductionFactor = 120;
+const UInt_t num_entries = 384;
+const UInt_t end_time = num_entries;
+const int maxNumTimeShiftables = 2;
+const int longestIntervalList = 2;
+const int longestConsumption = 6;
+const int numHouses = 2;
+
+typedef int[0, maxNumTimeShiftables-1] timeShiftable_t;
+typedef int[0, numHouses-1] house_t;
+typedef int[0, longestIntervalList-1] interval_t;
+typedef int[0, num_entries-1] entries_t;
+
+broadcast chan batteryStartSwitch;
+broadcast chan batteryStopSwitch;
+			   
+Int32_t batteryFillLimit[house_t] = {-2147480000,-2147480000};
+Int24_t batteryFillValue[house_t];
+UInt32_t SoC[house_t] = {0,150000};
+
+Int24_t latestCost;
+
+broadcast chan tsStartChan[house_t][timeShiftable_t];
+						   
+Int32_t fillLimits[house_t] = {-2147480000,-2147480000};
+
+UInt32_t fillValues[house_t];
+UInt32_t charges[house_t];
+int[0, longestIntervalList] evIntervals[house_t];
+
+house_t order[house_t];
+						   
+int[-1, end_time] tsStartTimes[house_t][timeShiftable_t] = {{-1,-1},{-1,-1}};
+
+typedef struct {
+	int start;
+	int end;
+} Interval_t;
+
+typedef struct {
+	int length;
+	Interval_t intervalList[longestIntervalList];
+} IntervalList_t;
+
+typedef struct {
+	int length;
+	int data[longestConsumption];
+} ConsumptionProfile_t;
+
+typedef struct {
+	ConsumptionProfile_t consumption;
+	IntervalList_t data;
+} TimeShiftable_t;
+
+typedef struct {
+	UInt32_t maximumChargeRate;
+	UInt32_t capacity;
+	UInt32_t initialSoc;
+} Battery_t;
+
+typedef struct {
+	UInt32_t maximumChargeRate;
+	UInt32_t capacity;
+	UInt32_t requiredCharge[longestIntervalList];
+	Int32_t maxTsCosts[longestIntervalList];
+	IntervalList_t intervals;
+} ElectricalVehicle_t;
+
+typedef struct {
+	int timeShiftableLength;
+	TimeShiftable_t timeShiftables[maxNumTimeShiftables];
+	Battery_t battery;
+	ElectricalVehicle_t ev;
+} House_t;
+
+const int HouseBases[num_entries] = {7347,7068,6060,5262,5134,6078,5670,4803,6004,5769,5262,5280,5806,5745,5232,5154,6241,5388,5406,5074,6174,6068,7358,6304,7056,5094,5007,8731,11117,7890,7860,9975,8721,9705,8991,8016,5036,6096,6190,5688,2436,2865,2428,2358,2043,1263,1123,2157,-14133,-14271,-13487,-13602,1527,1206,2995,6357,4130,2824,2787,2181,6333,6709,6998,7944,10426,11795,12375,13017,14352,28086,15903,23714,14807,16222,14001,13198,12859,12202,10002,10276,12547,17862,12363,11976,12568,12775,13074,13050,14189,14049,12666,12329,10675,9384,8116,5896,6612,4839,5313,5947,5775,4905,5451,6325,5004,5262,6195,5401,5031,5994,5361,5476,5589,5919,4819,5637,6222,5058,6102,10010,7080,4750,6590,7632,6402,7484,8892,10144,9542,11597,11342,9005,7477,7262,8292,7119,5763,6802,6423,6015,5703,6736,6531,5295,3588,3961,2781,4823,16080,19937,16700,10107,5305,4998,4698,7479,6895,7762,9798,8496,10780,11989,12738,12582,22912,34921,30819,20490,15793,14688,15785,34242,27996,16954,13264,15070,15300,13959,13720,14185,13164,13311,13089,14221,13416,11523,11545,10132,7950,7728,7707,6582,4701,5619,5995,5370,5109,6009,5563,5106,5706,5751,5299,5337,6348,4701,5629,6045,5361,4768,6297,5868,4752,5275,6600,5160,4650,6553,5679,4803,5472,6175,5388,5079,6450,6556,5560,7950,6162,6243,5631,5679,3159,3765,3210,2832,3877,3474,3083,2823,3427,2175,1845,12997,-764,-1218,-1260,-2054,3772,2913,7927,2917,5427,6553,6269,7363,9926,11201,10734,12067,29341,24564,40857,25789,22002,10836,11926,11445,10860,11529,11011,11442,11073,11337,11311,25688,16192,10710,11869,12153,11193,10812,12652,10439,6842,5580,6600,4956,4701,6490,5844,4650,5751,6025,5259,5091,5856,5911,5016,5700,5466,5680,5532,5466,5329,5988,5208,5568,5476,5685,5466,5337,5878,5259,5670,5571,5362,5643,5778,4965,5680,7326,10479,13323,11419,10371,8775,9263,11445,8496,8190,9982,7113,5820,6174,8374,5082,4069,5463,5142,4740,11484,6413,5523,6829,8937,8486,8325,9534,10116,9262,9991,10013,10644,31524,24798,27685,14860,12052,11586,11457,11644,38796,56318,51615,23118,26937,22098,23845,11446,12510,11439,10770,12298,12327,10770,11025,13321,10941,9375,9459,6581,4650,5208};
+const int HouseAvg = 44340;
+const Interval_t emptyInterval_t = {0,0};
+const ConsumptionProfile_t emptyConsumptionProfile_t = {0, {0, 0, 0, 0, 0, 0}};
+const IntervalList_t emptyIntervalList_t = {0, {emptyInterval_t, emptyInterval_t}};
+const TimeShiftable_t emptyTimeShiftable_t = {emptyConsumptionProfile_t, emptyIntervalList_t};
+const Battery_t emptyBattery_t = {0, 0, 0};
+const Interval_t h0d0listi0 = {38, 66};
+const IntervalList_t h0d0list = {1, {h0d0listi0, emptyInterval_t}};
+const ConsumptionProfile_t h0d0cp = {5, {13595, 13705, 2249, 2506, 2454, 0}};
+const TimeShiftable_t h0d0 = {h0d0cp, h0d0list};
+const Interval_t h0d1listi0 = {33, 71};
+const Interval_t h0d1listi1 = {171, 184};
+const IntervalList_t h0d1list = {2, {h0d1listi0, h0d1listi1}};
+const ConsumptionProfile_t h0d1cp = {6, {525, 30225, 11747, 9626, 26115, 2606}};
+const TimeShiftable_t h0d1 = {h0d1cp, h0d1list};
+const Interval_t h0evlisti0 = {68, 127};
+const IntervalList_t h0evlist = {1, {h0evlisti0, emptyInterval_t}};
+const ElectricalVehicle_t h0ev = {55500, 12000, {10000,0}, {1370,0}, h0evlist};
+const House_t h0 = {2, {h0d0, h0d1}, emptyBattery_t, h0ev};
+const Interval_t h1d0listi0 = {152, 177};
+const IntervalList_t h1d0list = {1, {h1d0listi0, emptyInterval_t}};
+const ConsumptionProfile_t h1d0cp = {5, {13595, 13705, 2249, 2506, 2454, 0}};
+const TimeShiftable_t h1d0 = {h1d0cp, h1d0list};
+const IntervalList_t h1d1list = {0, {emptyInterval_t, emptyInterval_t}};
+const ConsumptionProfile_t h1d1cp = {6, {525, 30225, 11747, 9626, 26115, 2606}};
+const TimeShiftable_t h1d1 = {h1d1cp, h1d1list};
+const Interval_t h1evlisti0 = {68, 127};
+const IntervalList_t h1evlist = {1, {h1evlisti0, emptyInterval_t}};
+const ElectricalVehicle_t h1ev = {55500, 12000, {11656,0}, {1370,0}, h1evlist};
+const Battery_t h1battery = {55500, 300000, 150000};
+const House_t h1 = {2, {h1d0, h1d1}, h1battery, h1ev};
+const House_t houses[house_t] = {h0, h1};
+Int24_t getHouseCost(int offset) {
+    return HouseBases[intTime+offset]+HouseDynamicCosts+HouseBatteryCosts;
+}</declaration><template><name>Battery</name><parameter>const house_t id, UInt32_t &amp;SoC, Int24_t &amp;batteryFillValue, Int32_t &amp;batteryFillLimit</parameter><declaration>const int capacity = houses[id].battery.capacity;
+const int maximumChargeRate = houses[id].battery.maximumChargeRate;
+const int choices = 3;
+
+bool startCondition() {
+    return  (
+                (abs(getHouseCost(0)) &gt; abs(latestCost)) ||
+                (getHouseCost(0) &gt; 0 ? latestCost &lt; 0 : latestCost &gt; 0) 
+            ) &amp;&amp; (
+                (getHouseCost(0) &lt; latestCost &amp;&amp; SoC != capacity) || 
+                ((getHouseCost(0) &gt; latestCost &amp;&amp; SoC != 0))
+            );
+}</declaration><location id="id0" x="187" y="94"><name x="153" y="111">Unavailable</name></location><location id="id1" x="-544" y="17"><name x="-620" y="9">Working</name></location><location id="id2" x="-221" y="17"><name x="-263" y="34">StartChoice</name><committed/></location><location id="id3" x="0" y="17"><name x="9" y="26">Inactive</name></location><location id="id4" x="187" y="17"><name x="179" y="-17">Init</name><committed/></location><init ref="id4"/><transition controllable="false"><source ref="id1"/><target ref="id2"/><label kind="guard" x="-535" y="85">abs(getHouseCost(0)) &lt; abs(batteryFillLimit)</label><label kind="synchronisation" x="-535" y="102">batteryStep?</label><label kind="assignment" x="-535" y="119">SoC += batteryFillValue,
+batteryFillLimit=-2147480000,
+batteryFillValue=0</label><nail x="-544" y="119"/><nail x="-221" y="119"/></transition><transition controllable="false"><source ref="id4"/><target ref="id0"/><label kind="guard" x="77" y="51">capacity == 0</label></transition><transition controllable="false"><source ref="id1"/><target ref="id3"/><label kind="guard" x="-527" y="-170">SoC+batteryFillValue == 0 || SoC+batteryFillValue == capacity</label><label kind="synchronisation" x="-527" y="-153">step?</label><label kind="assignment" x="-527" y="-136">SoC += batteryFillValue,
+batteryFillLimit=-2147480000,
+batteryFillValue=0</label><nail x="-544" y="-136"/><nail x="111" y="-136"/><nail x="111" y="-68"/></transition><transition><source ref="id2"/><target ref="id1"/><label kind="select" x="-518" y="-34">i:int[0,choices-1]</label><label kind="assignment" x="-518" y="-17">batteryFillLimit=latestCost+
+(getHouseCost(0)-latestCost)*i/choices</label></transition><transition><source ref="id2"/><target ref="id3"/><nail x="-221" y="-42"/><nail x="0" y="-42"/></transition><transition controllable="false"><source ref="id3"/><target ref="id2"/><label kind="guard" x="-187" y="0">startCondition()</label><label kind="synchronisation" x="-187" y="17">batteryStep?</label></transition><transition controllable="false"><source ref="id4"/><target ref="id3"/><label kind="guard" x="43" y="0">capacity != 0</label></transition></template><template><name>EV</name><parameter>const house_t h_id, Int32_t &amp;fillLimit, int[0,2147483647] &amp;fillValue, UInt32_t &amp;charge, int[0, longestIntervalList] &amp;interval</parameter><declaration>const int capacity = houses[h_id].ev.capacity*60;
+const bool active = capacity &gt; 0; 
+const int maximumChargeRate = houses[h_id].ev.maximumChargeRate;
+const int requiredCharge[interval_t] = houses[h_id].ev.requiredCharge;
+const int interval_length = houses[h_id].ev.intervals.length;
+const Interval_t intervals[interval_t] = houses[h_id].ev.intervals.intervalList;
+const Int32_t maxTSCosts[interval_t] = houses[h_id].ev.maxTsCosts;
+const int options = 30;
+
+typedef int[0,options] possibilities_t;
+
+
+int[-2147483647, 2147483647] getHighestLimit(int i) {
+    int[-2147483647, 2147483647] limit = -2147483647;
+    for(h:house_t) {
+        if (fillLimits[h] != -2147483647 &amp;&amp; fillLimits[h] &gt; limit  &amp;&amp; houses[h].ev.intervals.intervalList[0].end &gt; i) {
+            limit = fillLimits[h];
+        }
+    }
+    return limit;
+}
+
+int[-2147483647, 2147483647] getAvg() {
+    int[-2147483647, 2147483647]  avg;
+    int i;
+    for(i=intervals[interval].start; i &lt; intervals[interval].end; i++) {
+        avg += HouseBases[i] &gt;? getHighestLimit(i);
+    }
+    return avg/(intervals[0].end-intervals[0].start);    
+}
+
+int[-2147483647, 2147483647] getLimit(possibilities_t j) {
+    int[-2147483647, 2147483647] initLimit = getAvg()+requiredCharge[interval]*60/(intervals[interval].end-intervals[interval].start);
+    UInt_t numBelow;
+    UInt32_t sumAbove;
+    int i;
+    for(i=intervals[interval].start; i &lt; intervals[interval].end; i++) {
+        numBelow += HouseBases[i] &gt; initLimit ? 0 : 1;
+        sumAbove += HouseBases[i] &gt; initLimit ? HouseBases[i]-initLimit : 0;
+    }
+    return initLimit-(sumAbove/numBelow)+maxTSCosts[interval]/options*j;
+}
+
+void setFillValue() {
+    UInt_t remainingTime = (intervals[interval].end-intTime);
+    int[0,2147483647] opt = (fillLimit-getHouseCost(0) &gt;? 0) &lt;? maximumChargeRate  &lt;? requiredCharge[interval]*60-charge;
+    if (charge+opt &gt;= requiredCharge[interval]*60-(remainingTime-1)*maximumChargeRate) {
+        fillValue = opt;
+    } else {
+        fillValue = (requiredCharge[interval]*60-charge)/remainingTime;
+    }
+}
+
+
+</declaration><location id="id5" x="-17088" y="-17376"><name x="-17096" y="-17408">Finished</name></location><location id="id6" x="-17768" y="-17376"><name x="-17792" y="-17352">Waiting</name></location><location id="id7" x="-17768" y="-17480"><committed/></location><location id="id8" x="-17632" y="-17480"><name x="-17656" y="-17520">Inactive</name></location><location id="id9" x="-17464" y="-17376"><name x="-17496" y="-17408">Choice</name><committed/></location><location id="id10" x="-17248" y="-17376"><name x="-17272" y="-17408">Working</name><committed/></location><init ref="id7"/><transition><source ref="id6"/><target ref="id9"/><label kind="guard" x="-17676" y="-17406">intTime==intervals[interval].start</label><label kind="synchronisation" x="-17676" y="-17391">tsStep?</label></transition><transition controllable="false"><source ref="id10"/><target ref="id6"/><label kind="guard" x="-17544" y="-17288">interval &lt; interval_length</label><nail x="-17464" y="-17288"/></transition><transition controllable="false"><source ref="id10"/><target ref="id5"/><label kind="guard" x="-17232" y="-17360">interval == interval_length</label></transition><transition controllable="false"><source ref="id7"/><target ref="id6"/><label kind="guard" x="-17792" y="-17440">active</label></transition><transition><source ref="id9"/><target ref="id10"/><label kind="select" x="-17432" y="-17424">i:possibilities_t</label><label kind="assignment" x="-17432" y="-17408">fillLimit = getLimit(i),
+interval++</label></transition><transition controllable="false"><source ref="id7"/><target ref="id8"/><label kind="guard" x="-17728" y="-17512">!active</label></transition></template><template><name>Time</name><declaration>clock t;
+
+</declaration><location id="id11" x="-977" y="-340"><name x="-1004" y="-327">Working</name><label kind="invariant" x="-1011" y="-306">t &lt;= 1 &amp;&amp;
+time &lt;= end_time</label></location><location id="id12" x="-799" y="-340"><name x="-809" y="-374">Finished</name></location><init ref="id11"/><transition controllable="false"><source ref="id11"/><target ref="id11"/><label kind="guard" x="-1037" y="-518">t == 1 &amp;&amp;
+time &lt; end_time</label><label kind="synchronisation" x="-1037" y="-450">step!</label><label kind="assignment" x="-1037" y="-484">t = 0,
+intTime++</label><nail x="-926" y="-425"/><nail x="-1037" y="-425"/></transition><transition controllable="false"><source ref="id11"/><target ref="id12"/><label kind="guard" x="-952" y="-357">time == end_time</label></transition></template><template><name>MainLoop</name><declaration>void calculateBatteryFillValues() {
+    int l = 0;
+    int i;
+    for(h:house_t) {
+        order[h] = 1;
+    }
+    for(h:house_t) {
+        if (batteryFillLimit[h] != -2147480000) {
+            int i;
+            for(i=0; i&lt;= l; i++) {
+                if (i==l || abs(batteryFillLimit[h]) &gt; abs(batteryFillLimit[order[i]])) {
+                    int j;
+                    for(j = l; j &gt; i; j--) {
+                        order[j] = order[j-1]; 
+                    }    
+                    order[i] = h;
+                    l++;
+                    i = l+1;
+                }
+            }
+        }
+    }
+    for(i = 0; i &lt; l; i++) {
+        house_t h_id = order[i];
+        Int32_t diff = batteryFillLimit[h_id]-getHouseCost(0);
+    	SoC[h_id]+=batteryFillValue[h_id];
+    	if (diff &gt; 0) {
+        	batteryFillValue[h_id] = diff &lt;? houses[h_id].battery.capacity-SoC[h_id] &lt;? houses[h_id].battery.maximumChargeRate;
+   	    } else {
+        	batteryFillValue[h_id] = diff &gt;? -SoC[h_id] &gt;? -houses[h_id].battery.maximumChargeRate;
+    	}
+    	HouseBatteryCosts+=batteryFillValue[h_id];
+    }
+}
+
+void calculateFillValues() {
+    int l = 0;
+    int i;
+    int[-2147483647, 2147483647] limit;
+    for(h:house_t) {
+        order[h] = 1;
+    }
+    for(h:house_t) {
+        if (fillLimits[h] != -2147480000) {
+            int i;
+            for(i=0; i&lt;= l; i++) {
+                if (i==l || 
+                    houses[h].ev.intervals.intervalList[0].start &lt; houses[order[i]].ev.intervals.intervalList[0].start || 
+                    (
+                        houses[h].ev.intervals.intervalList[0].start == houses[order[i]].ev.intervals.intervalList[0].start &amp;&amp; 
+                        fillLimits[h] &lt; fillLimits[order[i]]
+                    )) {
+                    int j;
+                    for(j = l; j &gt; i; j--) {
+                        order[j] = order[j-1]; 
+                    }    
+                    order[i] = h;
+                    l++;
+                    i = l+1;
+                    if (fillLimits[h] &gt; limit) {
+                        limit = fillLimits[h];
+                    }
+                }
+            }
+        }
+    }
+    //HouseBatteryCosts = 0;
+    for(i = 0; i &lt; l; i++) {
+        house_t h = order[i];
+        ElectricalVehicle_t ev = houses[h].ev;
+        int[0, longestIntervalList] interval = evIntervals[h]-1;
+        Int24_t hCost = getHouseCost(0);
+        UInt32_t rC = ev.requiredCharge[interval]*60;
+        int end = ev.intervals.intervalList[interval].end;
+        UInt24_t desiredRate = (fillLimits[h] - hCost) &gt;? 0 &lt;?  ev.maximumChargeRate;
+        UInt32_t cC = charges[h]+fillValues[h];
+		charges[h] = cC;
+		if (rC != cC) {
+			fillValues[h] = rC - cC - desiredRate &lt;= (end - intTime - 1) * ev.maximumChargeRate ? desiredRate &lt;? (rC - cC) : (rC - cC) / (end - intTime);
+            HouseBatteryCosts+=fillValues[h];
+        } else {
+            fillLimits[h] = -2147480000;
+            fillValues[h] = 0;
+            charges[h] = 0;
+        }
+    }
+}
+
+void alterTsCosts() {
+    int[-1,end_time] start;
+    HouseDynamicCosts = 0;
+    for (h:house_t) {
+        for (t:timeShiftable_t) {
+            start = tsStartTimes[h][t];
+            if (start != -1) {
+                ConsumptionProfile_t consumption = houses[h].timeShiftables[t].consumption;
+                if (start + consumption.length &lt;= intTime) {
+                    tsStartTimes[h][t] = -1;
+                }
+                else {
+                    HouseDynamicCosts += consumption.data[intTime-start];
+                }
+            }
+        }
+    }
+}</declaration><location id="id13" x="-331" y="-8"><urgent/></location><location id="id14" x="-331" y="-119"><urgent/></location><location id="id15" x="-85" y="-119"><committed/></location><location id="id16" x="-85" y="-8"></location><init ref="id16"/><transition controllable="false"><source ref="id14"/><target ref="id13"/><label kind="synchronisation" x="-467" y="-93">batteryStep!</label><label kind="assignment" x="-476" y="-76">alterTsCosts(),
+calculateFillValues()</label></transition><transition controllable="false"><source ref="id13"/><target ref="id16"/><label kind="assignment" x="-313" y="-8">calculateBatteryFillValues(),
+latestCost = getHouseCost(0)</label></transition><transition controllable="false"><source ref="id15"/><target ref="id14"/><label kind="synchronisation" x="-221" y="-153">tsStep!</label></transition><transition controllable="false"><source ref="id16"/><target ref="id15"/><label kind="synchronisation" x="-76" y="-76">step?</label><label kind="assignment" x="-76" y="-59">HouseBatteryCosts = 0</label></transition></template><template><name>CostCalculator</name><location id="id17" x="-289" y="-187"><label kind="invariant" x="-637" y="-161">cost'==square((HouseBases[intTime]+HouseDynamicCosts+HouseBatteryCosts)/reductionFactor)</label></location><init ref="id17"/></template><template><name>TimeShiftable</name><parameter>const house_t h_id, const timeShiftable_t id, broadcast chan &amp;start, int[-1, end_time] &amp;startTime</parameter><declaration>const bool active = houses[h_id].timeShiftableLength &gt; id  &amp;&amp; houses[h_id].timeShiftables[id].data.length &gt; 0;
+const int interval_length = houses[h_id].timeShiftables[id].data.length;
+const int consumption_length = houses[h_id].timeShiftables[id].consumption.length;
+const Interval_t intervalList[interval_t] = houses[h_id].timeShiftables[id].data.intervalList;
+int[0,interval_length] interval;</declaration><location id="id18" x="-11152" y="-11033"><name x="-11186" y="-11016">Activated</name><committed/></location><location id="id19" x="-11509" y="-11288"><name x="-11526" y="-11271">Start</name><committed/></location><location id="id20" x="-10897" y="-11288"><name x="-10880" y="-11296">Finished</name></location><location id="id21" x="-11152" y="-11288"><name x="-11177" y="-11356">Waiting</name><label kind="invariant" x="-11262" y="-11339">time &lt;= intervalList[interval].end
+ - consumption_length</label></location><location id="id22" x="-11152" y="-11109"><name x="-11228" y="-11118">Choice</name><committed/></location><init ref="id19"/><transition controllable="false"><source ref="id19"/><target ref="id21"/><label kind="guard" x="-11466" y="-11313">active</label></transition><transition controllable="false"><source ref="id18"/><target ref="id21"/><label kind="guard" x="-11373" y="-11050">interval &lt; interval_length-1</label><label kind="assignment" x="-11373" y="-11033">interval++</label><nail x="-11381" y="-11033"/><nail x="-11381" y="-11288"/></transition><transition controllable="false"><source ref="id21"/><target ref="id22"/><label kind="synchronisation" x="-11211" y="-11211">tsStep?</label></transition><transition><source ref="id22"/><target ref="id21"/><label kind="guard" x="-11143" y="-11169">time &lt; intervalList[interval].end
+ - consumption_length</label><nail x="-11092" y="-11109"/><nail x="-11092" y="-11228"/></transition><transition><source ref="id22"/><target ref="id18"/><label kind="guard" x="-11336" y="-11104">time &gt;= 
+intervalList[interval].start</label><label kind="assignment" x="-11143" y="-11084">startTime = intTime</label></transition><transition controllable="false"><source ref="id18"/><target ref="id20"/><label kind="guard" x="-11126" y="-11050">interval == interval_length-1</label><nail x="-10897" y="-11033"/></transition><transition controllable="false"><source ref="id19"/><target ref="id20"/><label kind="guard" x="-11475" y="-11407">!active</label><nail x="-11509" y="-11381"/><nail x="-10897" y="-11381"/></transition></template><system>// Place template instantiations here.
+Batteries(const house_t h_id) = Battery(h_id, SoC[h_id], batteryFillValue[h_id], batteryFillLimit[h_id]);
+//BatteryControllers(const house_t h_id, const battery_t b_id) = BatteryController(h_id, b_id, SoC[h_id][b_id], batteryStartSwitch[h_id][b_id], batteryStopSwitch[h_id][b_id], batteryCost[h_id][b_id], HouseBases, HouseDynamicCosts, HouseBatteryCosts);
+TimeShiftables(const house_t h_id, const timeShiftable_t t_id) = TimeShiftable(h_id, t_id, tsStartChan[h_id][t_id], tsStartTimes[h_id][t_id]);
+//TSControllers(const house_t h_id, const timeShiftable_t t_id) = TSController(h_id, t_id, tsStartChan[h_id][t_id], tsStartTimes[h_id][t_id]);
+EVS(const house_t h_id) = EV(h_id, fillLimits[h_id], fillValues[h_id], charges[h_id], evIntervals[h_id]); 
+test = EVS(0);
+system Time, MainLoop, CostCalculator, EVS;//, TimeShiftables, EVS, Batteries;
+</system></nta>
